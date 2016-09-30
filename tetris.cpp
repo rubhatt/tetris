@@ -92,6 +92,16 @@ enum class Color {
     e_Magenta
 };
 
+template<typename T>
+inline std::ostream &operator<<(std::ostream &os, const sf::Rect<T> &rect) {
+    os << "Rect<T> = [ left=" << rect.left
+       << " top=" << rect.top
+       << " width=" << rect.width
+       << " height=" << rect.height
+       << " ]";
+    return os;
+}
+
 class TetrisShape : public sf::Drawable, public sf::Transformable {
     std::vector<sf::Sprite> m_sprites;
   public:
@@ -106,13 +116,23 @@ class TetrisShape : public sf::Drawable, public sf::Transformable {
 TetrisShape::TetrisShape(
 	const sf::Sprite & base_sprite,
 	const std::array<Offset, 4> &offset_array) {
+    float x = 0.f, y = 0.f;
     for (auto & offset : offset_array) {
+
 	sf::Sprite sprite(base_sprite);
 	sprite.setPosition(
 		(offset.x * 50),
 		(offset.y *50));
 	m_sprites.push_back(sprite);
+
+	auto bounds = sprite.getGlobalBounds();
+	x += (2*bounds.left + bounds.width) / 2.f;
+	y += (2*bounds.top + bounds.height) / 2.f;
     }
+
+    // set the origin of the shape to the center of the shape because that's how
+    // tetris works.
+    this->setOrigin(x/4.f, y/4.f);
 }
 
 void TetrisShape::draw(
