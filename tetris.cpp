@@ -92,14 +92,12 @@ enum class Color {
     e_Magenta
 };
 
-class TetrisShape : public sf::Drawable {
+class TetrisShape : public sf::Drawable, public sf::Transformable {
     std::vector<sf::Sprite> m_sprites;
   public:
     TetrisShape(
 	    const sf::Sprite &base_sprite,
-	    const std::array<Offset, 4> & offset_array,
-	    const Coordinates<int> &initial_coords
-	    );
+	    const std::array<Offset, 4> & offset_array);
 
     virtual void draw(
 	    sf::RenderTarget &target, sf::RenderStates states) const;
@@ -107,28 +105,27 @@ class TetrisShape : public sf::Drawable {
 
 TetrisShape::TetrisShape(
 	const sf::Sprite & base_sprite,
-	const std::array<Offset, 4> &offset_array,
-	const Coordinates<int> &initial_coords
-	) {
+	const std::array<Offset, 4> &offset_array) {
     for (auto & offset : offset_array) {
 	sf::Sprite sprite(base_sprite);
 	sprite.setPosition(
-		initial_coords.x + (offset.x * 50),
-		initial_coords.y + (offset.y *50));
+		(offset.x * 50),
+		(offset.y *50));
 	m_sprites.push_back(sprite);
     }
 }
 
 void TetrisShape::draw(
 	sf::RenderTarget &target, sf::RenderStates states) const {
+    states.transform *= this->getTransform();
     for (auto & sprite : m_sprites) {
-	target.draw(sprite, states);
+	target.draw(sprite, states.transform);
     }
 }
 
 int main()
 {
-    sf::RenderWindow window(sf::VideoMode(400, 400), "RuTetris");
+    sf::RenderWindow window(sf::VideoMode(800, 800), "RuTetris");
     window.setFramerateLimit(60);
 
     sf::Texture texture;
@@ -142,9 +139,10 @@ int main()
     unsigned shape_index = 0;
 
     std::vector<TetrisShape> tetris_shapes;
+    static Coordinates<int> k_Coords{300,300};
     for (unsigned i = 0; i < sprites.size(); ++i) {
-	tetris_shapes.emplace_back(
-		sprites[i], k_Offsets[i], Coordinates<int>{100,100});
+	tetris_shapes.emplace_back(sprites[i], k_Offsets[i]);
+	tetris_shapes.back().setPosition(k_Coords.x, k_Coords.y);
     }
 
     TetrisShape * current = &tetris_shapes[shape_index++];
@@ -155,8 +153,15 @@ int main()
 		window.close();
 	    }
 	    bool change_shape = false;
+	    int rotate = 0;
 	    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left)) {
 		change_shape = true;
+	    }
+	    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down)) {
+		rotate = 1;
+	    }
+	    else if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up)) {
+		rotate = -1;
 	    }
 
 	    if (change_shape) {
@@ -164,6 +169,9 @@ int main()
 		if (shape_index >= k_Offsets.size()) { shape_index = 0; }
 		std::cout << shape_index << "\n";
 		current = &tetris_shapes[shape_index++];
+	    }
+	    if (rotate) {
+		current->rotate(rotate * 45);
 	    }
 	}
 
